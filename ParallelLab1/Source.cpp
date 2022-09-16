@@ -21,7 +21,7 @@ void Limitations(int min, int max, int& value)
 {
     while (value < min || value > max)
     {
-        cout << "Введенное число не соответствует промежутку. Повторите ввод: ";
+        cout << "Введенное число не соответствует     промежутку. Повторите ввод: ";
         input_correctly_number(value);
     }
 }
