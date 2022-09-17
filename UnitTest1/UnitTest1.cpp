@@ -25,17 +25,12 @@ namespace UnitTest1
 			Matrix().ParallelMultiplicateTwoMatrixByOpenMp("m1.txt", "m2.txt", "m3.txt", option);
 		}
 
-		void CheckResult(const vector<vector<int>>& result) {
-			vector<vector<int>> m3 = Matrix().GetMatrixFromFile("m3.txt");
-			Assert::IsTrue(m3 == result);
-		}
-
 		void Multiplicate(const vector<vector<int>>& m1, const vector<vector<int>>& m2, const vector<vector<int>>& result) {
 			ProcessSequentialMultiplicating(m1, m2);
-			CheckResult(result);
+			Assert::IsTrue(Matrix().GetMatrixFromFile("m3.txt") == result);
 			for (int i = 1; i < 6; i++) {
 				ProcessParallelMultiplicating(m1, m2, i);
-				CheckResult(result);
+				Assert::IsTrue(Matrix().GetMatrixFromFile("m3.txt") == result);
 			}
 		}
 
@@ -43,7 +38,6 @@ namespace UnitTest1
 			bool check = false;
 			try {
 				ProcessSequentialMultiplicating(m1, m2);
-
 			}
 			catch (const Exception& ex) {
 				check = true;
