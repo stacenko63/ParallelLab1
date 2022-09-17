@@ -4,6 +4,7 @@
 #include <sstream>
 #include <algorithm>
 #include <ctime>
+#include <omp.h>
 using namespace std;
 
 template<typename T>
@@ -21,7 +22,7 @@ void Limitations(int min, int max, int& value)
 {
     while (value < min || value > max)
     {
-        cout << "Введенное число не соответствует     промежутку. Повторите ввод: ";
+        cout << "Введенное число не соответствует промежутку. Повторите ввод: ";
         input_correctly_number(value);
     }
 }
@@ -47,9 +48,9 @@ private:
     {
         if (!(in >> aa) || cin.peek() != '\n')
         {
-            cin.clear();
+            /*cin.clear();
             cin.ignore(cin.rdbuf()->in_avail());
-            throw Exception(exeption_text);
+            throw Exception(exeption_text);*/
         }
     }
 
@@ -67,15 +68,21 @@ private:
 
 
 
+public:
+
     vector<vector<int>> GetMatrixFromFile(const string& path) {
         ifstream file;
         file.open(path, ios::in);
         if (!file.is_open()) throw Exception("Ошибка при открытии файла " + path);
         int row, col;
         string line;
-        CorrectlyInput(file, row, "В файле " + path + " указано некорректное число строк!\n");
-        CorrectlyInput(file, col, "В файле " + path + " указано некорректное число строк!\n");
+        //CorrectlyInput(file, row, "В файле " + path + " указано некорректное число строк!\n");
+        //CorrectlyInput(file, col, "В файле " + path + " указано некорректное число строк!\n");
+        file >> row >> col;
+        if (row <= 0) throw Exception("Количество строк должно быть больше 0!\n");
+        if (col <= 0) throw Exception("Количество столбцов должно быть больше 0!\n");
         vector<vector<int>> result = GenerateMatrix(row, col);
+        //getline(file, line, '\n');
         getline(file, line, '\n');
         for (int i = 0; i < result.size(); i++) {
             for (int j = 0; j < result[i].size(); j++) {
@@ -104,8 +111,6 @@ private:
         file.close();
     }
 
-public:
-
     void CreateMatrix(int row, int col, const string& path) {
         if (row <= 0) throw Exception("Количество строк должно быть больше 0!\n");
         if (col <= 0) throw Exception("Количество столбцов должно быть больше 0!\n");
@@ -113,7 +118,7 @@ public:
     }
 
 
-    void SequentialMultiplicateTwoMatrix(const string& path1, const string& path2, const string& result_path) {
+    pair<float, int> SequentialMultiplicateTwoMatrix(const string& path1, const string& path2, const string& result_path) {
         auto m1 = GetMatrixFromFile(path1);
         auto m2 = GetMatrixFromFile(path2);
 
@@ -142,10 +147,50 @@ public:
 
         time = clock() - time;
 
-        cout << "Время выполнения умножения матриц: " << (float)time / CLOCKS_PER_SEC << " секунд\n" << "Количество выполненный действий: " << actions_count << "!\n";
+        //cout << "Время выполнения умножения матриц: " << (double)time / CLOCKS_PER_SEC << " секунд\n" << "Количество выполненный действий: " << actions_count << "!\n";
 
         WriteMatrixToFile(result, result_path);
 
+        return pair<float, int>((double)time / CLOCKS_PER_SEC, actions_count);
+    }
+
+    pair<float, int> SequentialMultiplicateTwoMatrixByOpenMp(const string& path1, const string& path2, const string& result_path) {
+        auto m1 = GetMatrixFromFile(path1);
+        auto m2 = GetMatrixFromFile(path2);
+
+
+
+        if (m1[0].size() != m2.size()) throw Exception("Для перемножения двух матриц количество колонок первой матрицы должно быть равно количеству строк второй матрицы!");
+
+        vector<vector<int>> result = GenerateMatrix(m1.size(), m2[0].size());
+
+        clock_t time = clock();
+
+        int actions_count = 0;
+
+
+        #pragma omp parallel
+        {
+            for (int i = 0; i < m1.size(); i++)
+            {
+                for (int k = 0; k < m2[0].size(); k++)
+                {
+                    for (int j = 0; j < m1[0].size(); j++)
+                    {
+                        result[i][k] += m1[i][j] * m2[j][k];
+                        actions_count++;
+                    }
+                }
+            }
+        }
+
+        
+
+        time = clock() - time;
+
+        //WriteMatrixToFile(result, result_path);
+
+        return pair<float, int>((double)time / CLOCKS_PER_SEC, actions_count);
     }
 };
 
@@ -163,42 +208,68 @@ void CreateMatrix() {
 
 
 
+//int main() {
+//    int menu = 1;
+//    setlocale(LC_ALL, "RUS");
+//
+//    do {
+//        cout << "Лабораторная работа №1\n\n1 - Генерация файлов с матрицами\n2 - Умножение матриц последоватьльно\n3 - Умножение матриц параллельно с помощью OpenMp\n0 - выход\nВведите ваш выбор: ";
+//        input_correctly_number(menu);
+//        Limitations(0, 3, menu);
+//
+//        try {
+//
+//            if (menu == 1) {
+//                cout << "Создание первой матрицы: \n\n";
+//                CreateMatrix();
+//                cout << "Создание второй матрицы: \n\n";
+//                CreateMatrix();
+//            }
+//
+//            else if (menu != 0) {
+//                string path1, path2, result_path;
+//                cout << "Введите путь к файлу с первой матрицей: ";
+//                cin >> path1;
+//                cout << "Введите путь к файлу со второй матрицей: ";
+//                cin >> path2;
+//                cout << "Введите путь к файлу, где будет хранить результат операции: ";
+//                cin >> result_path;
+//                if (menu == 2) Matrix().SequentialMultiplicateTwoMatrix(path1, path2, result_path);
+//            }
+//
+//        }
+//        catch (const Exception& ex) {
+//            cout << ex.What() << "\n";
+//        }
+//
+//
+//
+//    } while (menu != 0);
+//}
+
+
+
 int main() {
-    int menu = 1;
     setlocale(LC_ALL, "RUS");
+    cout << "Последовательное умножение: \n\n\n";
+    double sum = 0; 
+    int actions_count = 0, start = 500, finish = 1000;
 
-    do {
-        cout << "Лабораторная работа №1\n\n1 - Генерация файлов с матрицами\n2 - Умножение матриц последоватьльно\n3 - Умножение матриц параллельно с помощью OpenMp\n0 - выход\nВведите ваш выбор: ";
-        input_correctly_number(menu);
-        Limitations(0, 3, menu);
+    for (int i = start; i < finish; i+=100) {
 
-        try {
-
-            if (menu == 1) {
-                cout << "Создание первой матрицы: \n\n";
-                CreateMatrix();
-                cout << "Создание второй матрицы: \n\n";
-                CreateMatrix();
-            }
-
-            else if (menu != 0) {
-                string path1, path2, result_path;
-                cout << "Введите путь к файлу с первой матрицей: ";
-                cin >> path1;
-                cout << "Введите путь к файлу со второй матрицей: ";
-                cin >> path2;
-                cout << "Введите путь к файлу, где будет хранить результат операции: ";
-                cin >> result_path;
-                if (menu == 2) Matrix().SequentialMultiplicateTwoMatrix(path1, path2, result_path);
-            }
-
+        for (int j = 0; j < 5; j++) {
+            Matrix().CreateMatrix(i, i, "m1.txt");
+            //auto result = Matrix().SequentialMultiplicateTwoMatrix("m1.txt", "m1.txt", "m1.txt");
+            auto result = Matrix().SequentialMultiplicateTwoMatrixByOpenMp("m1.txt", "m1.txt", "m1.txt");
+            sum += result.first;
+            actions_count = result.second;
         }
-        catch (const Exception& ex) {
-            cout << ex.What() << "\n";
-        }
+        cout << i << " * " << i << ": " << double(sum / 5) << " seconds, " << actions_count << " actions\n";
+        sum = 0;
+        actions_count = 0;
+    }
 
-
-
-    } while (menu != 0);
+    cout << "\n\n\n";
 }
+
 
