@@ -154,7 +154,7 @@ public:
         return pair<float, int>((double)time / CLOCKS_PER_SEC, actions_count);
     }
 
-    pair<float, int> SequentialMultiplicateTwoMatrixByOpenMp(const string& path1, const string& path2, const string& result_path) {
+    pair<float, int> ParallelMultiplicateTwoMatrixByOpenMp(const string& path1, const string& path2, const string& result_path, const int option = 1) {
         auto m1 = GetMatrixFromFile(path1);
         auto m2 = GetMatrixFromFile(path2);
 
@@ -168,9 +168,42 @@ public:
 
         int actions_count = 0;
 
+        if (option == 1) {
 
-        #pragma omp parallel
-        {
+            for (int i = 0; i < m1.size(); i++)
+            {
+                for (int k = 0; k < m2[0].size(); k++)
+                {
+                    #pragma omp for
+                    for (int j = 0; j < m1[0].size(); j++)
+                    {
+                        result[i][k] += m1[i][j] * m2[j][k];
+                        actions_count++;
+                    }
+
+                }
+            }
+
+        }
+
+        else if (option == 2) {
+            for (int i = 0; i < m1.size(); i++)
+            {
+                #pragma omp for
+                for (int k = 0; k < m2[0].size(); k++)
+                {
+                    for (int j = 0; j < m1[0].size(); j++)
+                    {
+                        result[i][k] += m1[i][j] * m2[j][k];
+                        actions_count++;
+                    }
+
+                }
+            }
+        }
+
+        else if (option == 3) {
+            #pragma omp for
             for (int i = 0; i < m1.size(); i++)
             {
                 for (int k = 0; k < m2[0].size(); k++)
@@ -180,10 +213,47 @@ public:
                         result[i][k] += m1[i][j] * m2[j][k];
                         actions_count++;
                     }
+
                 }
             }
         }
 
+        else if (option == 4) {
+
+            #pragma omp parallel 
+            {
+                for (int i = 0; i < m1.size(); i++)
+                {
+                    for (int k = 0; k < m2[0].size(); k++)
+                    {
+                        for (int j = 0; j < m1[0].size(); j++)
+                        {
+                            result[i][k] += m1[i][j] * m2[j][k];
+                            actions_count++;
+                        }
+
+                    }
+                }
+            }
+        }
+
+        else if (option == 5) {
+            #pragma omp parallel for schedule (static)
+            for (int i = 0; i < m1.size(); i++)
+            {
+                for (int k = 0; k < m2[0].size(); k++)
+                {
+                    for (int j = 0; j < m1[0].size(); j++)
+                    {
+                        result[i][k] += m1[i][j] * m2[j][k];
+                        actions_count++;
+                    }
+
+                }
+            }
+        }
+
+        else throw Exception("Указанная опция недоступна!");
         
 
         time = clock() - time;
@@ -193,6 +263,8 @@ public:
         return pair<float, int>((double)time / CLOCKS_PER_SEC, actions_count);
     }
 };
+
+
 
 void CreateMatrix() {
     int row, col;
@@ -260,7 +332,7 @@ int main() {
         for (int j = 0; j < 5; j++) {
             Matrix().CreateMatrix(i, i, "m1.txt");
             //auto result = Matrix().SequentialMultiplicateTwoMatrix("m1.txt", "m1.txt", "m1.txt");
-            auto result = Matrix().SequentialMultiplicateTwoMatrixByOpenMp("m1.txt", "m1.txt", "m1.txt");
+            auto result = Matrix().ParallelMultiplicateTwoMatrixByOpenMp("m1.txt", "m1.txt", "m1.txt");
             sum += result.first;
             actions_count = result.second;
         }

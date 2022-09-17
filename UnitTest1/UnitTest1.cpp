@@ -9,29 +9,54 @@ namespace UnitTest1
 	TEST_CLASS(UnitTest1)
 	{
 	public:
-		
-		void ProcessMultiplicating(const vector<vector<int>>& m1, const vector<vector<int>>& m2) {
+
+		void WriteMatrixToFile(const vector<vector<int>>& m1, const vector<vector<int>>& m2) {
 			Matrix().WriteMatrixToFile(m1, "m1.txt");
 			Matrix().WriteMatrixToFile(m2, "m2.txt");
+		}
+		
+		void ProcessSequentialMultiplicating(const vector<vector<int>>& m1, const vector<vector<int>>& m2) {
+			WriteMatrixToFile(m1, m2);
 			Matrix().SequentialMultiplicateTwoMatrix("m1.txt", "m2.txt", "m3.txt");
 		}
 
-		void Multiplicate(const vector<vector<int>>& m1, const vector<vector<int>>& m2, const vector<vector<int>>& result) {
-			ProcessMultiplicating(m1, m2);
+		void ProcessParallelMultiplicating(const vector<vector<int>>& m1, const vector<vector<int>>& m2, const int option) {
+			WriteMatrixToFile(m1, m2);
+			Matrix().ParallelMultiplicateTwoMatrixByOpenMp("m1.txt", "m2.txt", "m3.txt", option);
+		}
+
+		void CheckResult(const vector<vector<int>>& result) {
 			vector<vector<int>> m3 = Matrix().GetMatrixFromFile("m3.txt");
 			Assert::IsTrue(m3 == result);
+		}
+
+		void Multiplicate(const vector<vector<int>>& m1, const vector<vector<int>>& m2, const vector<vector<int>>& result) {
+			ProcessSequentialMultiplicating(m1, m2);
+			CheckResult(result);
+			for (int i = 1; i < 6; i++) {
+				ProcessParallelMultiplicating(m1, m2, i);
+				CheckResult(result);
+			}
 		}
 
 		void ThrowException(const vector<vector<int>>& m1, const vector<vector<int>>& m2) {
 			bool check = false;
 			try {
-				ProcessMultiplicating(m1, m2);
+				ProcessSequentialMultiplicating(m1, m2);
+
 			}
 			catch (const Exception& ex) {
 				check = true;
 			}
 			Assert::IsTrue(check);
 		}
+
+
+
+
+
+
+
 
 
 		TEST_METHOD(CheckMultiplicate)
