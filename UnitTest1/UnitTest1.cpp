@@ -22,13 +22,13 @@ namespace UnitTest1
 
 		void ProcessParallelMultiplicating(const vector<vector<int>>& m1, const vector<vector<int>>& m2, const int option) {
 			WriteMatrixToFile(m1, m2);
-			Matrix().ParallelMultiplicateTwoMatrixByOpenMp("m1.txt", "m2.txt", "m3.txt", option);
+			Matrix().ParallelMultiplicateTwoMatrix("m1.txt", "m2.txt", "m3.txt", option);
 		}
 
 		void Multiplicate(const vector<vector<int>>& m1, const vector<vector<int>>& m2, const vector<vector<int>>& result) {
 			ProcessSequentialMultiplicating(m1, m2);
 			Assert::IsTrue(Matrix().GetMatrixFromFile("m3.txt") == result);
-			for (int i = 1; i < 6; i++) {
+			for (int i = 1; i <= 6; i++) {
 				ProcessParallelMultiplicating(m1, m2, i);
 				Assert::IsTrue(Matrix().GetMatrixFromFile("m3.txt") == result);
 			}
