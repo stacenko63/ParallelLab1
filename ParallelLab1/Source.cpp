@@ -9,6 +9,12 @@
 #include <windows.h>
 using namespace std;
 
+/// <summary>
+/// 
+/// </summary>
+/// <typeparam name="T"></typeparam>
+/// <param name="aa"></param>
+
 template<typename T>
 void input_correctly_number(T& aa)
 {
